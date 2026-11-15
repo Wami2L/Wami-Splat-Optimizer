@@ -77,9 +77,30 @@ splatkit preparar escena.ply --nombre jardin --colmap <colmap/sparse/0> --unity 
 splatkit camaras escenas/jardin/piramide.ply --lichtfeld recorrido.json   # cámaras para el banco
 ```
 
-En Unity: añade el paquete (`Packages/manifest.json` → `"com.wami.splatoptimizer": "file:<ruta>/unity/com.wami.splatoptimizer"`),
-pon `GsplatRenderer` + `SplatLod` (con el `piramide.json`) + `SplatQuality` (perfil). La URP necesita la renderer feature
-`Gsplat URP Feature` y D3D12/Vulkan/Metal (DX11 y GLES no sirven: la ordenación usa operaciones de *wave*).
+### En Unity
+
+1. Añade el paquete: `Packages/manifest.json` → `"com.wami.splatoptimizer": "file:<ruta>/unity/com.wami.splatoptimizer"`
+   (o *Package Manager › Add package from disk*). La URP necesita la renderer feature `Gsplat URP Feature` y
+   D3D12/Vulkan/Metal (DX11 y GLES no sirven: la ordenación usa operaciones de *wave*).
+2. **Tools › Wami Splat Optimizer › Importar escena 3DGS**: eliges el `.ply` (y la carpeta COLMAP `sparse/0`, que se
+   busca sola), pulsas *Importar* y la ventana lanza `python -m splatkit preparar`: limpieza, escala real y suelo
+   desde las cámaras, pirámides LOD de PC y de visores autónomos, colisiones. Al terminar mete los archivos en el
+   proyecto y crea:
+   - una **escena de escritorio** (cámara de vuelo; teclas 1/2 cambian entre la versión de PC y la de Quest);
+   - una **escena VR** (si el proyecto tiene XR Interaction Toolkit y sus Starter Assets): rig con andar, girar y
+     teletransporte, colisiones sacadas de los splats y, si quieres, una mesa con objetos agarrables.
+   Se puede cancelar, sobrevive a recargas de scripts y lista los entornos ya importados (abrir, recrear escenas).
+3. Componentes (*Add Component › Wami Splat Optimizer*): `Splat Renderer`, `Splat LOD`, `Splat Quality` (perfil),
+   `Splat Variants`, `Fly Camera`, `Respawn`.
+4. Carpetas (entornos, escenas, prefijo, materiales, capturas): *Project Settings › Wami Splat Optimizer › Import* o
+   en la propia ventana; se guardan en `ProjectSettings/WamiSplatOptimizer.json`.
+
+Sin editor (CI): `-executeMethod SplatKit.EditorTools.SplatImport.BatchImport -ply x.ply -nombre x [-colmap …]
+[-antialias] [-sinVR]`, y `SplatEnvironments.BatchCreateAndCapture` / `SplatVrScene.BatchCreateAndCapture [-entorno x]`
+para recrear escenas y capturarlas.
+
+Recortes: `splatkit recortar escena.ply --objetos objetos.json` saca objetos sueltos (cajas en ejes de Unity) con el
+pivote en la base, para usarlos como assets.
 
 Banco (Unity cerrado):
 

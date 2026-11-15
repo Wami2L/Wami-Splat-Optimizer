@@ -1,0 +1,30 @@
+{
+    "name": "SplatKit.Editor.XR",
+    "rootNamespace": "SplatKit.EditorTools",
+    "references": [
+        "SplatKit.Editor",
+        "SplatKit.Runtime",
+        "Gsplat",
+        "Unity.XR.Interaction.Toolkit",
+        "Unity.XR.CoreUtils",
+        "Unity.RenderPipelines.Universal.Runtime",
+        "Unity.RenderPipelines.Core.Runtime"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [
+        "SPLATKIT_XRI",
+        "SPLATKIT_URP"
+    ],
+    "versionDefines": [
+        { "name": "com.unity.xr.interaction.toolkit", "expression": "3.0.0", "define": "SPLATKIT_XRI" },
+        { "name": "com.unity.render-pipelines.universal", "expression": "", "define": "SPLATKIT_URP" }
+    ],
+    "noEngineReferences": false
+}

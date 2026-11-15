@@ -301,3 +301,29 @@ def test_colisiones_niveladas(tmp_path):
     assert not sin["nivelado"] and obstaculos(sin) > 10
     # Rotación identidad = sin nivelar (mismo marco que las pirámides).
     assert not colision.build(ply, colision.Opciones(), log, rotacion=[0, 0, 0, 1])[0]["nivelado"]
+
+
+def test_recorte_con_pivote_en_la_base_y_variante_ligera(tmp_path):
+    """El recorte se queda con lo de dentro de la caja (ejes de Unity = x, -y, z del archivo), sin transparentes,
+    gigantes ni sueltos, con el pivote en el centro de su base; si pasa del límite escribe la variante ligera."""
+    from splatkit import recorte
+    rng = np.random.default_rng(3)
+    obj = np.column_stack([rng.uniform(-0.2, 0.2, 4000), rng.uniform(-2, -1, 4000), rng.uniform(4.8, 5.2, 4000)])
+    fuera = rng.uniform(-3, 3, (2000, 3))
+    fuera[:, 2] += 10
+    pos = np.vstack([obj, fuera, [[0, -1.5, 5.0]], [[0.1, -1.5, 5.0]]]).astype(np.float32)
+    n = len(pos)
+    alpha = np.full(n, 0.8, np.float32)
+    alpha[-2] = 0.005
+    sigma = np.full((n, 3), 0.005, np.float32)
+    sigma[-1] = 0.5
+    path = _write_scene(str(tmp_path / "escena.ply"), pos, alpha, sigma, sh_degree=1)
+    fichas = recorte.recortar_lista(path, [{"id": "bloque", "caja": {"min": [-0.3, 0.9, 4.7], "max": [0.3, 2.1, 5.3]}}],
+                                    str(tmp_path / "out"), recorte.Opciones(max_quest=1000))
+    f = fichas["bloque"]
+    assert f["splats"] == 4000
+    assert f["pivote"][1] == pytest.approx(1.0, abs=0.02)
+    assert f["ply_quest"] == "bloque_quest.ply"
+    assert SplatPly.open(str(tmp_path / "out" / "bloque.ply")).count == 4000
+    assert SplatPly.open(str(tmp_path / "out" / "bloque_quest.ply")).count == 1000
+    assert json.load(open(tmp_path / "out" / "recortes.json"))["objetos"]["bloque"]["splats"] == 4000

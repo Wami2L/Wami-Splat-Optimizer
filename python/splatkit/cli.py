@@ -676,6 +676,19 @@ def cmd_comparar(a):
     return 0
 
 
+def cmd_recortar(a):
+    """Recorta objetos de la escena (cajas en ejes de Unity) a PLY sueltos con el pivote en la base."""
+    from splatkit import recorte
+    objetos = _load(a.objetos)
+    objetos = objetos.get("objetos", objetos) if isinstance(objetos, dict) else objetos
+    out = a.salida or os.path.join(entorno_dir(a.ply, None, a), "recortes")
+    fichas = recorte.recortar_lista(a.ply, objetos, out, recorte.Opciones(max_quest=a.max_quest))
+    for k, f in fichas.items():
+        print(t("  {k}: {n:,} splats, pivote {p}", "  {k}: {n:,} splats, pivot {p}", k=k, n=f["splats"], p=f["pivote"]))
+    print(t("Recortes en {o}", "Cut-outs in {o}", o=out))
+    return 0
+
+
 def cmd_perfiles(a):
     if a.json:
         print(json.dumps(profiles.load(), indent=2, ensure_ascii=False))
@@ -856,6 +869,16 @@ def build_parser():
     p.add_argument("--hojas", action="store_true", help=t("guardar hojas referencia | variante | diferencia×4", "save reference | variant | diff×4 sheets"))
     p.add_argument("--centro", type=float, default=1.0, help=t("medir solo la zona central (fracción)", "measure only the central zone (fraction)"))
     p.set_defaults(func=cmd_comparar)
+
+    p = sub.add_parser("recortar", help=t("recortar objetos de la escena a PLY sueltos (pivote en la base)",
+                                          "cut objects out of the scene into separate PLYs (pivot at the base)"))
+    p.add_argument("ply", help=t("escena limpia (ejes RDF; cajas en ejes de Unity)", "clean scene (RDF; boxes in Unity axes)"))
+    p.add_argument("--objetos", required=True, help=t("JSON con [{id, caja: {min, max}, excluir?, margen?}]",
+                                                      "JSON with [{id, caja: {min, max}, excluir?, margen?}]"))
+    p.add_argument("--salida", help=t("carpeta de salida (por defecto <escena>/recortes)", "output folder"))
+    p.add_argument("--max-quest", type=int, default=150_000,
+                   help=t("por encima, se escribe también <id>_quest.ply ligero", "above this, also write a light <id>_quest.ply"))
+    p.set_defaults(func=cmd_recortar)
 
     p = sub.add_parser("perfiles", help=t("lista los perfiles de calidad", "list the quality profiles"))
     p.add_argument("--json", action="store_true")
