@@ -35,8 +35,9 @@ namespace SplatKit.EditorTools
         // En VR se dibuja dos veces (un ojo cada vez): perfil automático.
         public static readonly SplatEnvironments.Variant[] Variants =
         {
-            new SplatEnvironments.Variant { file = "piramide.ply", label = "LOD · VR (auto)", budget = 600_000, profile = "auto" },
-            new SplatEnvironments.Variant { file = "piramide_quest.ply", label = "LOD · Quest 2 (150 k)", budget = 150_000, profile = "quest2" },
+            new SplatEnvironments.Variant { file = "piramide.ply", label = SplatEnvironments.HighLabel, budget = 600_000, profile = "auto" },
+            new SplatEnvironments.Variant { file = "piramide_low.ply", altFile = "piramide_quest.ply", label = SplatEnvironments.LowLabel, budget = 150_000, profile = "quest2" },
+            new SplatEnvironments.Variant { file = "piramide_max.ply", label = SplatEnvironments.MaxLabel, budget = 2_500_000, profile = "ultra" },
         };
 
         // El blaster va en el centro y tumbado (de pie sobre la empuñadura vuelca y cae de la mesa).

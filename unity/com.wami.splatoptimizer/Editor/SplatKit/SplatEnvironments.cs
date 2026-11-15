@@ -28,16 +28,26 @@ namespace SplatKit.EditorTools
 
         public class Variant
         {
-            public string file, label;
+            public string file, altFile, label;
             public int budget;
             public string profile;          // perfil de calidad (SplatQuality) / quality profile
+
+            /// <summary>El archivo presente en la carpeta (file o, si no, altFile), o null.</summary>
+            public string Present(string folder) =>
+                File.Exists(Path.Combine(folder, file)) ? file
+                : altFile != null && File.Exists(Path.Combine(folder, altFile)) ? altFile : null;
         }
 
-        /// <summary>Escritorio: un solo punto de vista. / Desktop variants.</summary>
+        // Calidades que exporta `splatkit preparar --piramides low,high,max`, todas con LOD.
+        public const string HighLabel = "High detail", LowLabel = "Low detail", MaxLabel = "Original (max)";
+        static readonly string[] s_manifests = { "piramide.json", "piramide_low.json", "piramide_max.json", "piramide_quest.json" };
+
+        /// <summary>Escritorio: High detail, Low detail y Original si están. / Desktop variants.</summary>
         public static readonly Variant[] Desktop =
         {
-            new Variant { file = "piramide.ply", label = "LOD · PC (Escritorio / Desktop)", budget = 2_000_000, profile = "desktop" },
-            new Variant { file = "piramide_quest.ply", label = "LOD · Quest 2 (150 k)", budget = 150_000, profile = "quest2" },
+            new Variant { file = "piramide.ply", label = HighLabel, budget = 1_000_000, profile = "desktop" },
+            new Variant { file = "piramide_low.ply", altFile = "piramide_quest.ply", label = LowLabel, budget = 150_000, profile = "quest2" },
+            new Variant { file = "piramide_max.ply", label = MaxLabel, budget = 2_500_000, profile = "ultra" },
         };
 
         /// <summary>
@@ -61,12 +71,16 @@ namespace SplatKit.EditorTools
             public bool antialias;          // entrenada con antialias (Mip-Splatting)
         }
 
-        /// <summary>Carpetas de entorno (las que tienen piramide.json). / Environment folders.</summary>
+        /// <summary>Carpetas de entorno (las que tienen alguna pirámide). / Environment folders.</summary>
         public static string[] Folders() =>
             Directory.Exists(Root)
                 ? Directory.GetDirectories(Root).Select(d => d.Replace('\\', '/'))
-                           .Where(d => File.Exists(d + "/piramide.json")).OrderBy(d => d).ToArray()
+                           .Where(d => ManifestPath(d) != null).OrderBy(d => d).ToArray()
                 : Array.Empty<string>();
+
+        /// <summary>El manifiesto de la primera pirámide presente, o null. / First pyramid manifest present.</summary>
+        public static string ManifestPath(string folder) =>
+            s_manifests.Select(m => folder + "/" + m).FirstOrDefault(File.Exists);
 
         public static string ScenePath(string folder, string suffix = "")
         {
@@ -75,7 +89,7 @@ namespace SplatKit.EditorTools
         }
 
         public static Manifest ReadManifest(string folder) =>
-            JsonUtility.FromJson<Manifest>(File.ReadAllText(folder + "/piramide.json"));
+            JsonUtility.FromJson<Manifest>(File.ReadAllText(ManifestPath(folder) ?? folder + "/piramide.json"));
 
         /// <summary>Se asegura de que el PLY se importe en RDF. / Make sure the PLY is imported as RDF.</summary>
         public static void EnsureRdf(string path)
@@ -109,7 +123,7 @@ namespace SplatKit.EditorTools
         /// </summary>
         public static SplatVariants CreateVariants(string folder, Variant[] variants)
         {
-            var present = variants.Where(v => File.Exists(Path.Combine(folder, v.file))).ToArray();
+            var present = variants.Where(v => v.Present(folder) != null).ToArray();
             if (present.Length == 0)
                 throw new FileNotFoundException(SplatLang.T($"No hay pirámides en {folder}", $"No pyramids in {folder}"));
             var man = ReadManifest(folder);
@@ -120,7 +134,7 @@ namespace SplatKit.EditorTools
             sel.credits = Credits(folder);
             sel.variants = present.Select(v =>
             {
-                var path = $"{folder}/{v.file}";
+                var path = $"{folder}/{v.Present(folder)}";
                 EnsureRdf(path);
                 var go = new GameObject(v.label);
                 go.transform.SetParent(root.transform, false);
@@ -135,7 +149,7 @@ namespace SplatKit.EditorTools
                 lod.manifest = AssetDatabase.LoadAssetAtPath<TextAsset>(Path.ChangeExtension(path, ".json"));
                 lod.budget = v.budget;
                 if (!string.IsNullOrEmpty(v.profile))
-                    go.AddComponent<SplatQuality>().profile = v.profile;
+                    go.AddComponent<SplatQuality>().SetProfile(v.profile);   // aplica ya el perfil (no el de por defecto)
                 return new SplatVariants.Variant { name = v.label, target = go };
             }).ToArray();
             sel.Activate(0);

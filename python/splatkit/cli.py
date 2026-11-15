@@ -365,7 +365,14 @@ def cmd_preparar(a):
     from splatkit import colision, limpieza, piramide
     t0 = time.time()
     perfiles = [p.strip() for p in a.perfiles.split(",")] if a.perfiles else None
-    pirs = profiles.pyramids_for(perfiles)
+    if a.piramides:
+        wanted = [x.strip() for x in a.piramides.split(",") if x.strip()]
+        pirs = [profiles.pyramid(x) for x in wanted]
+        pirs = [x for x in profiles.load()["pyramids"] if x in pirs]              # orden del archivo
+    elif perfiles:
+        pirs = profiles.pyramids_for(perfiles)
+    else:
+        pirs = [profiles.pyramid(x) for x in profiles.load()["default_pyramids"]]
     ply = SplatPly.open(a.ply)
     base = entorno_dir(a.ply, a.nombre, a)
     print(t("[1/4] Análisis: {n:,} splats · SH{sh} · {gb:.2f} GB", "[1/4] Analysis: {n:,} splats · SH{sh} · {gb:.2f} GB",
@@ -401,8 +408,11 @@ def cmd_preparar(a):
                 g=rep["suelo"]["inclinacion_grados"], e=rep["suelo"]["eje"], o=out_info))
 
     print(t("[2/4] Limpieza", "[2/4] Cleanup"))
-    o = limpieza.Opciones(sh=a.sh, max_sigma_diag=a.gigante, agujas_ratio=a.agujas, min_vecinos=a.vecinos)
-    clean_path = os.path.join(base, f"limpio_sh{a.sh}.ply")
+    # El nivel «max» conserva todos los SH del original: la escena limpia se hace con el mayor grado pedido.
+    sh_pir = {x["id"]: (ply.sh_degree if x["id"] == "max" else min(a.sh, x["sh"])) for x in pirs}
+    clean_sh = max(sh_pir.values())
+    o = limpieza.Opciones(sh=clean_sh, max_sigma_diag=a.gigante, agujas_ratio=a.agujas, min_vecinos=a.vecinos)
+    clean_path = os.path.join(base, f"limpio_sh{clean_sh}.ply")
     man = limpieza.clean(ply, clean_path, o, core, rep, extra, max_bytes=float("inf"), escala=escala)
     man["licencia"] = leer_licencia(a.ply)
     _dump(clean_path[:-4] + ".json", man)
@@ -431,11 +441,15 @@ def cmd_preparar(a):
     outputs = []
     for pyr in pirs:
         name = pyr["file"]
-        nivel_min = a.nivel_quest if (pyr["id"] == "quest" and a.nivel_quest is not None) else pyr["min_level"]
-        sh = min(a.sh, pyr["sh"])
+        nivel_min = a.nivel_bajo if (pyr["id"] == "low" and a.nivel_bajo is not None) else pyr["min_level"]
+        sh = sh_pir[pyr["id"]]
         path = os.path.join(base, name + ".ply")
         pm = piramide.build(clean, path, trozo=trozo, voxels=voxeles, sh_degree=sh, nivel_minimo=nivel_min)
         # gsplat no lee PLY de más de 2 GB: subir el nivel mínimo hasta caber.
+        while pyr["id"] == "max" and os.path.getsize(path) > 1.9 * 2**30 and sh > 0:
+            sh -= 1                         # en «max», antes perder SH que los splats originales
+            print(t("  ! {n}: más de 1,9 GB; SH{s}", "  ! {n}: over 1.9 GB; SH{s}", n=name, s=sh))
+            pm = piramide.build(clean, path, trozo=trozo, voxels=voxeles, sh_degree=sh, nivel_minimo=nivel_min)
         while os.path.getsize(path) > 1.9 * 2**30 and pm["nivel_minimo"] < len(pm["niveles_voxel_m"]) - 1:
             print(t("  ! {n}: {gb:.2f} GB > 1,9 GB; nivel mínimo {l}", "  ! {n}: {gb:.2f} GB > 1.9 GB; min level {l}",
                     n=name, gb=os.path.getsize(path) / 2**30, l=pm["nivel_minimo"] + 1))
@@ -443,7 +457,7 @@ def cmd_preparar(a):
                                 nivel_minimo=pm["nivel_minimo"] + 1)
         pm.update(traslacion_restada=man["traslacion_restada"], rotacion_unity=man["rotacion_unity"],
                   escala_aplicada=escala, camara_inicio=camara, licencia=man["licencia"], nombre=a.nombre,
-                  coordenadas="RDF", piramide=pyr["id"], antialias=antialias,
+                  coordenadas="RDF", piramide=pyr["id"], etiqueta=pyr["label"], antialias=antialias,
                   perfiles=[p for p in (perfiles or profiles.ids()) if profiles.get(p)["bake"]["pyramid"] == pyr["id"]])
         with open(path[:-4] + ".json", "w", encoding="utf-8") as f:
             json.dump(pm, f, ensure_ascii=False)
@@ -833,8 +847,12 @@ def build_parser():
     p.add_argument("--trozo", type=float, help=t("lado de los trozos (m); por defecto diagonal/20 entre 1 y 3 m",
                                                  "chunk side (m); default diagonal/20 clamped to 1-3 m"))
     p.add_argument("--sh", type=int, default=1, help=t("grado SH máximo de la escena limpia", "max SH degree of the clean scene"))
-    p.add_argument("--nivel-quest", type=int, help=t("nivel mínimo de la pirámide ligera (por defecto el del perfil)",
-                                                     "min level of the light pyramid (default from the profile)"))
+    p.add_argument("--piramides", help=t("calidades a exportar, separadas por comas: low (Low detail), high (High "
+                                         "detail), max (Original, máxima calidad). Por defecto low,high",
+                                         "qualities to export, comma separated: low (Low detail), high (High detail), "
+                                         "max (Original, maximum quality). Default low,high"))
+    p.add_argument("--nivel-bajo", "--nivel-quest", dest="nivel_bajo", type=int,
+                   help=t("nivel mínimo de Low detail (por defecto 1)", "min level of Low detail (default 1)"))
     p.add_argument("--agujas", type=float, default=10.0,
                    help=t("quitar agujas (σ1/σ2 mayor que esto, > 3 cm y alfa < 0,35); 0 = no filtrar",
                           "remove needles (σ1/σ2 above this, > 3 cm and alpha < 0.35); 0 = off"))

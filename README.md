@@ -90,6 +90,16 @@ splatkit camaras escenas/jardin/piramide.ply --lichtfeld recorrido.json   # cám
    - una **escena VR** (si el proyecto tiene XR Interaction Toolkit y sus Starter Assets): rig con andar, girar y
      teletransporte, colisiones sacadas de los splats y, si quieres, una mesa con objetos agarrables.
    Se puede cancelar, sobrevive a recargas de scripts y lista los entornos ya importados (abrir, recrear escenas).
+   Antes de importar marcas qué **calidades** exportar; todas van con LOD y aparecen como variantes de la escena
+   (teclas 1-3):
+
+   | Calidad | Qué lleva | Para | Jardín de ejemplo |
+   |---|---|---|---|
+   | **Low detail** | sin los splats originales ni SH | visores autónomos, equipos modestos | 72 MB |
+   | **High detail** | todos los niveles, SH1 | PC y PC VR | 193 MB |
+   | **Original (máxima calidad)** | los splats originales con todos sus SH | capturas, PC potente | 495 MB |
+
+   Desde la línea de órdenes: `splatkit preparar … --piramides low,high,max`.
 3. Componentes (*Add Component › Wami Splat Optimizer*): `Splat Renderer`, `Splat LOD`, `Splat Quality` (perfil),
    `Splat Variants`, `Fly Camera`, `Respawn`.
 4. Carpetas (entornos, escenas, prefijo, materiales, capturas): *Project Settings › Wami Splat Optimizer › Import* o

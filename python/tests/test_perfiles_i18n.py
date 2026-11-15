@@ -29,8 +29,10 @@ def test_perfiles_completos_y_bilingues():
 
 
 def test_piramides_por_perfil():
-    assert [p["id"] for p in profiles.pyramids_for(["quest2"])] == ["quest"]
-    assert [p["id"] for p in profiles.pyramids_for(["quest2", "pcvr_low"])] == ["full", "quest"]
+    assert [p["id"] for p in profiles.pyramids_for(["quest2"])] == ["low"]
+    assert [p["id"] for p in profiles.pyramids_for(["quest2", "pcvr_low", "ultra"])] == ["low", "high", "max"]
+    assert [p["label"]["en"] for p in profiles.load()["pyramids"]] == ["Low detail", "High detail",
+                                                                       "Original (maximum quality)"]
     assert len(profiles.pyramids_for()) == len(profiles.load()["pyramids"])
     with pytest.raises(KeyError):
         profiles.get("no_existe")

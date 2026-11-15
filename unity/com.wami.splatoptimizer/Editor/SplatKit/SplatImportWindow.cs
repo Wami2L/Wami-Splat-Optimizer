@@ -33,8 +33,12 @@ namespace SplatKit.EditorTools
         {
             public string ply = "", nombre = "", colmap = "";
             public float alturaCamara = 1.5f, escala, trozo, gigante = 0.05f, agujas = 10f;
-            public int sh = 1, nivelQuest = 1, vecinos = 16;
+            public int sh = 1, nivelBajo = 1, vecinos = 16;
             public bool vr = true, antialias;
+            public bool low = true, high = true, max;            // calidades a exportar (todas con LOD)
+
+            public string Pyramids => string.Join(",", new[] { low ? "low" : null, high ? "high" : null, max ? "max" : null }
+                                                           .Where(x => x != null));
         }
 
         const string K = "WamiSplatOptimizer.Import.";
@@ -88,7 +92,7 @@ namespace SplatKit.EditorTools
             args.AddRange(new[]
             {
                 "preparar", Q(p.ply), "--nombre", Q(p.nombre), "--unity", Q(Staging), "--unity-carpeta", Q(SplatEnvironments.Root),
-                "--sh", p.sh.ToString(CultureInfo.InvariantCulture), "--nivel-quest", p.nivelQuest.ToString(CultureInfo.InvariantCulture),
+                "--sh", p.sh.ToString(CultureInfo.InvariantCulture), "--nivel-bajo", p.nivelBajo.ToString(CultureInfo.InvariantCulture), "--piramides", p.Pyramids,
                 "--agujas", F(p.agujas), "--vecinos", p.vecinos.ToString(CultureInfo.InvariantCulture), "--gigante", F(p.gigante),
             });
             if (!string.IsNullOrEmpty(p.colmap)) args.AddRange(new[] { "--colmap", Q(p.colmap), "--altura-camara", F(p.alturaCamara) });
@@ -260,6 +264,8 @@ namespace SplatKit.EditorTools
             string Arg(string n) { var i = Array.IndexOf(a, n); return i >= 0 && i + 1 < a.Length ? a[i + 1] : null; }
             var req = new Request { ply = Arg("-ply") ?? "", nombre = Arg("-nombre") ?? "", colmap = Arg("-colmap") ?? "",
                                     vr = Array.IndexOf(a, "-sinVR") < 0, antialias = Array.IndexOf(a, "-antialias") >= 0 };
+            var pyr = Arg("-piramides");
+            if (pyr != null) { req.low = pyr.Contains("low"); req.high = pyr.Contains("high"); req.max = pyr.Contains("max"); }
             Launch(req);
             void Wait()
             {
@@ -509,6 +515,25 @@ namespace SplatKit.EditorTools
                         : T("Rig XRI, colisiones de los splats, mesa y objetos agarrables", "XRI rig, splat collisions, table and grabbables")),
                     m_p.vr && SplatEnvironments.Vr != null);
 
+            EditorGUILayout.LabelField(T("Calidades a exportar (todas con LOD)", "Qualities to export (all with LOD)"),
+                                       EditorStyles.miniBoldLabel);
+            using (new EditorGUI.IndentLevelScope())
+            {
+                m_p.low = EditorGUILayout.ToggleLeft(new GUIContent("Low detail",
+                    T("Sin los splats originales ni SH: visores autónomos y equipos modestos (la más ligera).",
+                      "No original splats and no SH: standalone headsets and modest machines (lightest).")), m_p.low);
+                m_p.high = EditorGUILayout.ToggleLeft(new GUIContent("High detail",
+                    T("Todos los niveles con SH1: PC y PC VR.", "All levels with SH1: PC and PC VR.")), m_p.high);
+                m_p.max = EditorGUILayout.ToggleLeft(new GUIContent(T("Original (máxima calidad)", "Original (maximum quality)"),
+                    T("Los splats originales con todos sus SH, también con LOD. Ocupa unas 2,5 veces High detail.",
+                      "The original splats with all their SH, still with LOD. About 2.5× the size of High detail.")), m_p.max);
+            }
+            if (!m_p.low && !m_p.high && !m_p.max)
+            {
+                EditorGUILayout.HelpBox(T("Marca al menos una calidad.", "Tick at least one quality."), MessageType.Error);
+                errors = true;
+            }
+
             m_p.antialias = EditorGUILayout.Toggle(new GUIContent(T("Entrenada con antialias", "Trained with antialiasing"),
                 T("Mip-Splatting / LichtFeld --enable-mip. Si el nombre del archivo dice «antialias» se detecta solo.",
                   "Mip-Splatting / LichtFeld --enable-mip. Detected automatically if the file name says 'antialias'.")), m_p.antialias);
@@ -524,8 +549,8 @@ namespace SplatKit.EditorTools
                         T("0 = diagonal/20 entre 1 y 3 m", "0 = diagonal/20 clamped to 1-3 m")), m_p.trozo);
                     m_p.sh = EditorGUILayout.IntSlider(new GUIContent(T("Grado SH", "SH degree"),
                         T("1 basta en VR y ocupa la mitad que 3", "1 is enough for VR and takes half the memory of 3")), m_p.sh, 0, 3);
-                    m_p.nivelQuest = EditorGUILayout.IntSlider(new GUIContent(T("Nivel mínimo Quest", "Quest min level"),
-                        T("Niveles más finos que este no van en la pirámide ligera", "Finer levels are left out of the light pyramid")), m_p.nivelQuest, 0, 3);
+                    m_p.nivelBajo = EditorGUILayout.IntSlider(new GUIContent(T("Nivel mínimo Low detail", "Low detail min level"),
+                        T("Niveles más finos que este no van en Low detail", "Finer levels are left out of Low detail")), m_p.nivelBajo, 0, 3);
                     m_p.agujas = EditorGUILayout.FloatField(new GUIContent(T("Quitar agujas (ratio)", "Remove needles (ratio)"),
                         T("Splats alargados y casi transparentes; 0 = no filtrar", "Elongated near-transparent splats; 0 = off")), m_p.agujas);
                     m_p.vecinos = EditorGUILayout.IntField(new GUIContent(T("Vecinos mínimos", "Min neighbours"),
@@ -533,7 +558,8 @@ namespace SplatKit.EditorTools
                     m_p.gigante = EditorGUILayout.FloatField(new GUIContent(T("Quitar gigantes (× diagonal)", "Remove huge (× diagonal)"),
                         T("Splats con σ mayor que esta fracción de la escena", "Splats with σ above this fraction of the scene")), m_p.gigante);
                     if (GUILayout.Button(T("Valores por defecto", "Defaults"), GUILayout.Width(150)))
-                        m_p = new SplatImport.Request { ply = m_p.ply, nombre = m_p.nombre, colmap = m_p.colmap, vr = m_p.vr, antialias = m_p.antialias };
+                        m_p = new SplatImport.Request { ply = m_p.ply, nombre = m_p.nombre, colmap = m_p.colmap, vr = m_p.vr,
+                                                        antialias = m_p.antialias, low = m_p.low, high = m_p.high, max = m_p.max };
                 }
             }
 
@@ -591,12 +617,14 @@ namespace SplatKit.EditorTools
             if (m_info.TryGetValue(folder, out var s)) return s;
             try
             {
-                var r = JsonUtility.FromJson<Summary>(File.ReadAllText(folder + "/piramide.json"));
+                var r = JsonUtility.FromJson<Summary>(File.ReadAllText(SplatEnvironments.ManifestPath(folder)));
+                var tiers = string.Join(" · ", SplatEnvironments.Desktop.Where(v => v.Present(folder) != null).Select(v => v.label));
                 long bytes = Directory.GetFiles(folder, "*.ply").Sum(f => new FileInfo(f).Length);
                 s = T($"{r.splats_total / 1e6:0.0} M splats en la pirámide · {bytes / (1024f * 1024f * 1024f):0.00} GB",
                       $"{r.splats_total / 1e6:0.0} M splats in the pyramid · {bytes / (1024f * 1024f * 1024f):0.00} GB");
                 if (r.escala_aplicada > 0 && Math.Abs(r.escala_aplicada - 1) > 1e-4) s += T($" · escala {r.escala_aplicada:0.###} m/u", $" · scale {r.escala_aplicada:0.###} m/u");
                 if (!File.Exists(folder + "/colision.json")) s += T(" · sin colisiones", " · no collisions");
+                s += "\n" + tiers;
             }
             catch (Exception e)
             {
