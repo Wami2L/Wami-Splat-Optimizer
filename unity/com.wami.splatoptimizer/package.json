@@ -1,0 +1,13 @@
+{
+  "name": "com.wami.splatoptimizer",
+  "displayName": "Wami Splat Optimizer",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "Fast 3D Gaussian Splatting for Unity and VR: LOD pyramids with a splat budget, quality profiles (Quest 2/3, PC VR, desktop), reduced-resolution splat pass and VR-stable sorting. Based on gsplat-unity (MIT). / Gaussian Splatting rápido para Unity y VR.",
+  "license": "MIT",
+  "author": { "name": "Wami" },
+  "keywords": ["gaussian splatting", "3dgs", "vr", "xr", "lod"],
+  "dependencies": {
+    "com.unity.mathematics": "1.3.2"
+  }
+}

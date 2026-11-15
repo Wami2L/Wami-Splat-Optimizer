@@ -1,0 +1,23 @@
+{
+    "name": "SplatKit.Runtime",
+    "rootNamespace": "SplatKit",
+    "references": [
+        "Gsplat",
+        "Unity.InputSystem",
+        "Unity.RenderPipelines.Core.Runtime",
+        "Unity.RenderPipelines.Universal.Runtime"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [
+        { "name": "com.unity.inputsystem", "expression": "", "define": "SPLATKIT_INPUT_SYSTEM" },
+        { "name": "com.unity.render-pipelines.universal", "expression": "", "define": "SPLATKIT_URP" },
+        { "name": "com.unity.modules.vr", "expression": "", "define": "SPLATKIT_XR" }
+    ],
+    "noEngineReferences": false
+}

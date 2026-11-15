@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "splatkit"
+version = "0.1.0"
+description = "Wami Splat Optimizer: Prepare 3D Gaussian Splatting scenes for fast VR rendering (LOD pyramids, cleanup, quality profiles) / Preparar escenas 3DGS para VR"
+readme = "../README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Wami" }]
+dependencies = ["numpy>=1.24", "scipy>=1.11", "pillow>=10.0"]
+
+[project.optional-dependencies]
+distill = ["torch>=2.4", "gsplat>=1.5"]
+dev = ["pytest>=7"]
+
+[project.scripts]
+splatkit = "splatkit.cli:main"
+
+[tool.setuptools]
+packages = ["splatkit"]
+
+[tool.setuptools.package-data]
+splatkit = ["data/*.json"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

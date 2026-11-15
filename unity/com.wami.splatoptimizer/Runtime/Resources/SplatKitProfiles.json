@@ -1,0 +1,94 @@
+{
+  "version": 1,
+  "note": {
+    "es": "Perfiles de calidad compartidos por la cadena offline (python) y el runtime (Unity). 'bake' dice qué pirámide genera la cadena offline; 'runtime' lo usa el renderizador. Una copia idéntica va en el paquete de Unity (Runtime/Resources/SplatKitProfiles.json).",
+    "en": "Quality profiles shared by the offline pipeline (python) and the runtime (Unity). 'bake' selects the pyramid the offline pipeline builds; 'runtime' is used by the renderer. An identical copy ships in the Unity package (Runtime/Resources/SplatKitProfiles.json)."
+  },
+  "pyramids": [
+    {"id": "full", "file": "piramide", "min_level": 0, "sh": 1,
+     "label": {"es": "Completa (PC)", "en": "Full (PC)"}},
+    {"id": "quest", "file": "piramide_quest", "min_level": 1, "sh": 0,
+     "label": {"es": "Ligera (visores autónomos)", "en": "Light (standalone headsets)"}}
+  ],
+  "default": "auto",
+  "profiles": [
+    {
+      "id": "auto",
+      "label": {"es": "Automático", "en": "Automatic"},
+      "description": {"es": "Elige el perfil según el dispositivo (visor autónomo, PC VR o escritorio) y ajusta el presupuesto con el tiempo real de GPU.",
+                      "en": "Picks the profile from the device (standalone headset, PC VR or desktop) and tunes the budget from the measured GPU time."},
+      "auto": true,
+      "bake": {"pyramid": "full"},
+      "runtime": {"splat_budget": 600000, "lod_angle_deg": 0.15, "sh_degree": 1, "splat_resolution": 0.8,
+                  "depth_prepass": true, "sort_mode": "radial", "sort_key_bits": 16, "stable_xr_lod": true,
+                  "behind_penalty": 1.5, "min_pixel_size": 2.0, "min_contribution": 2.0, "periphery": 1.0,
+                  "target_hz": 90, "adaptive": true}
+    },
+    {
+      "id": "quest2",
+      "label": {"es": "Quest 2 autónomo", "en": "Quest 2 standalone"},
+      "description": {"es": "Adreno 650 a 72 Hz: pirámide ligera sin splats originales, sin SH, pase de splats al 70 %.",
+                      "en": "Adreno 650 at 72 Hz: light pyramid without original splats, no SH, splat pass at 70 %."},
+      "bake": {"pyramid": "quest"},
+      "runtime": {"splat_budget": 150000, "lod_angle_deg": 0.3, "sh_degree": 0, "splat_resolution": 0.7,
+                  "depth_prepass": true, "sort_mode": "radial", "sort_key_bits": 16, "stable_xr_lod": true,
+                  "behind_penalty": 2.0, "min_pixel_size": 2.5, "min_contribution": 3.0, "periphery": 1.5,
+                  "target_hz": 72, "adaptive": true}
+    },
+    {
+      "id": "quest3",
+      "label": {"es": "Quest 3 autónomo", "en": "Quest 3 standalone"},
+      "description": {"es": "Adreno 740: más splats y pase de splats al 80 %.",
+                      "en": "Adreno 740: more splats and splat pass at 80 %."},
+      "bake": {"pyramid": "quest"},
+      "runtime": {"splat_budget": 400000, "lod_angle_deg": 0.2, "sh_degree": 0, "splat_resolution": 0.8,
+                  "depth_prepass": true, "sort_mode": "radial", "sort_key_bits": 16, "stable_xr_lod": true,
+                  "behind_penalty": 2.0, "min_pixel_size": 2.0, "min_contribution": 2.0, "periphery": 1.2,
+                  "target_hz": 72, "adaptive": true}
+    },
+    {
+      "id": "pcvr_low",
+      "label": {"es": "PC VR básico", "en": "PC VR low"},
+      "description": {"es": "GPU de portátil (RTX 3050) con Vive Pro o Quest por Link a 90 Hz.",
+                      "en": "Laptop GPU (RTX 3050) with Vive Pro or Quest over Link at 90 Hz."},
+      "bake": {"pyramid": "full"},
+      "runtime": {"splat_budget": 600000, "lod_angle_deg": 0.15, "sh_degree": 1, "splat_resolution": 0.7,
+                  "depth_prepass": true, "sort_mode": "radial", "sort_key_bits": 16, "stable_xr_lod": true,
+                  "behind_penalty": 1.5, "min_pixel_size": 2.0, "min_contribution": 2.0, "periphery": 1.0,
+                  "target_hz": 90, "adaptive": true}
+    },
+    {
+      "id": "pcvr_high",
+      "label": {"es": "PC VR alto", "en": "PC VR high"},
+      "description": {"es": "GPU de sobremesa: más splats y resolución completa.",
+                      "en": "Desktop GPU: more splats and full resolution."},
+      "bake": {"pyramid": "full"},
+      "runtime": {"splat_budget": 1500000, "lod_angle_deg": 0.1, "sh_degree": 1, "splat_resolution": 1.0,
+                  "depth_prepass": true, "sort_mode": "radial", "sort_key_bits": 16, "stable_xr_lod": true,
+                  "behind_penalty": 1.5, "min_pixel_size": 2.0, "min_contribution": 1.0, "periphery": 0.5,
+                  "target_hz": 90, "adaptive": true}
+    },
+    {
+      "id": "desktop",
+      "label": {"es": "Escritorio", "en": "Desktop"},
+      "description": {"es": "Pantalla plana: resolución completa, orden por la vista.",
+                      "en": "Flat screen: full resolution, view-axis sort."},
+      "bake": {"pyramid": "full"},
+      "runtime": {"splat_budget": 2000000, "lod_angle_deg": 0.1, "sh_degree": 1, "splat_resolution": 1.0,
+                  "depth_prepass": true, "sort_mode": "view", "sort_key_bits": 16, "stable_xr_lod": false,
+                  "behind_penalty": 1.0, "min_pixel_size": 2.0, "min_contribution": 1.0, "periphery": 0.0,
+                  "target_hz": 60, "adaptive": false}
+    },
+    {
+      "id": "ultra",
+      "label": {"es": "Máxima (capturas)", "en": "Ultra (captures)"},
+      "description": {"es": "Sin presupuesto ni atajos: la referencia para comparar calidad. No apto para VR.",
+                      "en": "No budget and no shortcuts: the reference to compare quality against. Not for VR."},
+      "bake": {"pyramid": "full"},
+      "runtime": {"splat_budget": 0, "lod_angle_deg": 0.0, "sh_degree": 3, "splat_resolution": 1.0,
+                  "depth_prepass": false, "sort_mode": "view", "sort_key_bits": 32, "stable_xr_lod": false,
+                  "behind_penalty": 1.0, "min_pixel_size": 1.0, "min_contribution": 0.0, "periphery": 0.0,
+                  "target_hz": 0, "adaptive": false}
+    }
+  ]
+}
